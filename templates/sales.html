@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Sales - SmashCity{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Sales Management</h1>
+    <p class="page-subtitle">Record transactions and track your daily performance</p>
+</div>
+
+<!-- Sales Entry Form -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-cash-register card-icon"></i>
+        <h3 class="card-title">Record New Sale</h3>
+    </div>
+    <form id="salesForm" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 1.5rem; align-items: end;">
+        <div>
+            <label style="display: block; margin-bottom: 0.5rem; color: #FFD700; font-weight: 500;">Menu Item</label>
+            <select id="saleItem" required style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid rgba(255, 215, 0, 0.3); background: #2a2a2a; color: #ffffff;">
+                <option value="">Select item...</option>
+                {% for key, item in menu_items.items() %}
+                    <option value="{{ key }}" data-price="{{ item.price }}" data-cost="{{ item.cost }}">
+                        {{ item.name }} - ${{ "%.2f"|format(item.price) }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 0.5rem; color: #FFD700; font-weight: 500;">Quantity</label>
+            <input type="number" id="saleQuantity" min="1" value="1" required style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid rgba(255, 215, 0, 0.3); background: #2a2a2a; color: #ffffff;">
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 0.5rem; color: #FFD700; font-weight: 500;">Total</label>
+            <div id="totalAmount" style="padding: 0.75rem; background: rgba(34, 197, 94, 0.1); border: 2px solid rgba(34, 197, 94, 0.3); border-radius: 8px; color: #22c55e; font-weight: 600; text-align: center;">
+                $0.00
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="height: fit-content;">
+            <i class="fas fa-plus"></i> Record Sale
+        </button>
+    </form>
+</div>
+
+<!-- Today's Sales Summary -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2rem; color: #22c55e; font-weight: bold;">
+                {% set today_sales = sales | selectattr('date', 'equalto', 'today') | list %}
+                {{ today_sales | length }}
+            </div>
+            <div style="color: #cccccc;">Today's Orders</div>
+        </div>
+    </div>
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2rem; color: #FFD700; font-weight: bold;">
+                ${{ "%.2f"|format(today_sales | sum(attribute='total') | default(0)) }}
+            </div>
+            <div style="color: #cccccc;">Today's Revenue</div>
+        </div>
+    </div>
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2rem; color: #FFA500; font-weight: bold;">
+                ${{ "%.2f"|format(today_sales | sum(attribute='cost') | default(0)) }}
+            </div>
+            <div style="color: #cccccc;">Today's Costs</div>
+        </div>
+    </div>
+    <div class="card">
+        <div style="text-align: center;">
+            <div style="font-size: 2rem; color: #22c55e; font-weight: bold;">
+                ${{ "%.2f"|format((today_sales | sum(attribute='total') | default(0)) - (today_sales | sum(attribute='cost') | default(0))) }}
+            </div>
+            <div style="color: #cccccc;">Today's Profit</div>
+        </div>
+    </div>
+</div>
+
+<!-- Sales History -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-history card-icon"></i>
+        <h3 class="card-title">Sales History</h3>
+    </div>
+    
+    {% if sales %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Order #</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Item</th>
+                    <th>Qty</th>
+                    <th>Unit Price</th>
+                    <th>Total</th>
+                    <th>Cost</th>
+                    <th>Profit</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in sales | reverse %}
+                <tr>
+                    <td style="font-weight: 600;">#{{ sale.id }}</td>
+                    <td>{{ sale.date }}</td>
+                    <td>{{ sale.time }}</td>
+                    <td>{{ sale.item }}</td>
+                    <td style="text-align: center;">{{ sale.quantity }}</td>
+                    <td style="color: #22c55e;">${{ "%.2f"|format(sale.price) }}</td>
+                    <td style="color: #22c55e; font-weight: 600;">${{ "%.2f"|format(sale.total) }}</td>
+                    <td style="color: #FFA500;">${{ "%.2f"|format(sale.cost) }}</td>
+                    <td style="color: #FFD700; font-weight: 600;">${{ "%.2f"|format(sale.profit) }}</td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="deleteSale({{ sale.id }})" style="padding: 0.5rem 1rem; font-size: 0.9rem;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 3rem; color: #cccccc;">
+        <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 1rem; color: rgba(255, 215, 0, 0.3);"></i>
+        <p>No sales recorded yet. Start by recording your first sale above!</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Quick Stats -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-chart-pie card-icon"></i>
+        <h3 class="card-title">Quick Analytics</h3>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem;">
+        <div style="text-align: center; padding: 1.5rem; background: rgba(255, 215, 0, 0.05); border-radius: 8px;">
+            <div style="font-size: 1.5rem; color: #FFD700; font-weight: bold; margin-bottom: 0.5rem;">
+                {% if sales %}
+                    {% set total_revenue = sales | sum(attribute='total') %}
+                    {% set total_cost = sales | sum(attribute='cost') %}
+                    {{ "%.1f"|format((total_revenue - total_cost) / total_revenue * 100 if total_revenue > 0 else 0) }}%
+                {% else %}
+                    0%
+                {% endif %}
+            </div>
+            <div style="color: #cccccc;">Average Profit Margin</div>
+        </div>
+        <div style="text-align: center; padding: 1.5rem; background: rgba(34, 197, 94, 0.05); border-radius: 8px;">
+            <div style="font-size: 1.5rem; color: #22c55e; font-weight: bold; margin-bottom: 0.5rem;">
+                {% if sales %}
+                    ${{ "%.2f"|format((sales | sum(attribute='total')) / (sales | length)) }}
+                {% else %}
+                    $0.00
+                {% endif %}
+            </div>
+            <div style="color: #cccccc;">Average Order Value</div>
+        </div>
+        <div style="text-align: center; padding: 1.5rem; background: rgba(220, 20, 60, 0.05); border-radius: 8px;">
+            <div style="font-size: 1.5rem; color: #DC143C; font-weight: bold; margin-bottom: 0.5rem;">
+                {% if sales %}
+                    {% set popular_item = sales | groupby('item') | sort(attribute='1.0.item') | last %}
+                    {{ popular_item[1] | length if popular_item else 0 }}
+                {% else %}
+                    0
+                {% endif %}
+            </div>
+            <div style="color: #cccccc;">Most Popular Item Sales</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Calculate total when item or quantity changes
+    function updateTotal() {
+        const itemSelect = document.getElementById('saleItem');
+        const quantity = parseInt(document.getElementById('saleQuantity').value) || 0;
+        const selectedOption = itemSelect.selectedOptions[0];
+        
+        if (selectedOption && selectedOption.dataset.price) {
+            const price = parseFloat(selectedOption.dataset.price);
+            const total = price * quantity;
+            document.getElementById('totalAmount').textContent = ' + total.toFixed(2);
+        } else {
+            document.getElementById('totalAmount').textContent = '$0.00';
+        }
+    }
+
+    // Add event listeners
+    document.getElementById('saleItem').addEventListener('change', updateTotal);
+    document.getElementById('saleQuantity').addEventListener('input', updateTotal);
+
+    // Handle form submission
+    document.getElementById('salesForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const item = document.getElementById('saleItem').value;
+        const quantity = parseInt(document.getElementById('saleQuantity').value);
+        
+        if (!item || !quantity) {
+            alert('Please select an item and quantity');
+            return;
+        }
+        
+        fetch('/record_sale', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                item: item,
+                quantity: quantity
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show success message with sale details
+                const sale = data.sale;
+                alert(`Sale recorded successfully!\n\nOrder #${sale.id}\n${sale.item} x${sale.quantity}\nTotal: ${sale.total.toFixed(2)}\nProfit: ${sale.profit.toFixed(2)}`);
+                
+                // Reset form
+                this.reset();
+                updateTotal();
+                
+                // Reload page to show updated data
+                location.reload();
+            } else {
+                alert('Error recording sale: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while recording the sale');
+        });
+    });
+
+    function deleteSale(saleId) {
+        if (confirm('Are you sure you want to delete this sale?')) {
+            // In a real app, this would make an API call to delete the sale
+            alert('Delete functionality would be implemented here');
+        }
+    }
+
+    // Auto-focus on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('saleItem').focus();
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Alt + S to focus on sale item
+        if (e.altKey && e.key === 's') {
+            e.preventDefault();
+            document.getElementById('saleItem').focus();
+        }
+        
+        // Alt + Q to focus on quantity
+        if (e.altKey && e.key === 'q') {
+            e.preventDefault();
+            document.getElementById('saleQuantity').focus();
+        }
+        
+        // Enter to submit when quantity field is focused
+        if (e.key === 'Enter' && document.activeElement === document.getElementById('saleQuantity')) {
+            e.preventDefault();
+            document.getElementById('salesForm').dispatchEvent(new Event('submit'));
+        }
+    });
+</script>
+{% endblock %}

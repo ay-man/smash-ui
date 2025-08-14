@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Menu & Pricing - SmashCity{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Menu & Pricing</h1>
+    <p class="page-subtitle">Manage your menu items, pricing, and profitability</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-utensils card-icon"></i>
+        <h3 class="card-title">Current Menu Items</h3>
+    </div>
+    
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Selling Price</th>
+                    <th>Cost to Make</th>
+                    <th>Profit per Item</th>
+                    <th>Profit Margin</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key, item in menu_items.items() %}
+                <tr>
+                    <td style="font-weight: 600;">{{ item.name }}</td>
+                    <td style="color: #22c55e; font-weight: 600;">${{ "%.2f"|format(item.price) }}</td>
+                    <td style="color: #FFA500;">${{ "%.2f"|format(item.cost) }}</td>
+                    <td style="color: #FFD700; font-weight: 600;">${{ "%.2f"|format(item.price - item.cost) }}</td>
+                    <td style="font-weight: 600; color: {% if ((item.price - item.cost) / item.price * 100) >= 60 %}#22c55e{% elif ((item.price - item.cost) / item.price * 100) >= 40 %}#FFA500{% else %}#DC143C{% endif %};">
+                        {{ "%.1f"|format((item.price - item.cost) / item.price * 100) }}%
+                    </td>
+                    <td>
+                        {% if ((item.price - item.cost) / item.price * 100) >= 60 %}
+                            <span style="color: #22c55e; font-weight: 600;">
+                                <i class="fas fa-thumbs-up"></i> Excellent
+                            </span>
+                        {% elif ((item.price - item.cost) / item.price * 100) >= 40 %}
+                            <span style="color: #FFA500; font-weight: 600;">
+                                <i class="fas fa-hand-point-right"></i> Good
+                            </span>
+                        {% else %}
+                            <span style="color: #DC143C; font-weight: 600;">
+                                <i class="fas fa-exclamation-triangle"></i> Low Margin
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-primary" onclick="editItem('{{ key }}', '{{ item.name }}', {{ item.price }}, {{ item.cost }})">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Menu Categories -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 2rem;">
+    
+    <!-- Burgers -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-hamburger card-icon"></i>
+            <h3 class="card-title">Smash Burgers</h3>
+        </div>
+        <div style="space-y: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid rgba(255, 215, 0, 0.1);">
+                <span>Single Smash</span>
+                <span style="color: #22c55e; font-weight: 600;">$5.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid rgba(255, 215, 0, 0.1);">
+                <span>Double Smash</span>
+                <span style="color: #22c55e; font-weight: 600;">$8.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid rgba(255, 215, 0, 0.1);">
+                <span>Triple Smash</span>
+                <span style="color: #22c55e; font-weight: 600;">$11.00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0;">
+                <span>Swiss & Mushroom</span>
+                <span style="color: #22c55e; font-weight: 600;">$9.50</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sandwiches -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-sandwich card-icon"></i>
+            <h3 class="card-title">Hero Sandwiches</h3>
+        </div>
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid rgba(255, 215, 0, 0.1);">
+                <span>Chopped Cheese Hero</span>
+                <span style="color: #22c55e; font-weight: 600;">$7.50</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid rgba(255, 215, 0, 0.1);">
+                <span>Philly Cheesesteak Hero</span>
+                <span style="color: #22c55e; font-weight: 600;">$8.50</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0;">
+                <span>Pizza Sandwich Hero</span>
+                <span style="color: #22c55e; font-weight: 600;">$9.00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sides & Drinks -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-french-fries card-icon"></i>
+            <h3 class="card-title">Sides & Drinks</h3>
+        </div>
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid rgba(255, 215, 0, 0.1);">
+                <span>Regular Fries</span>
+                <span style="color: #22c55e; font-weight: 600;">$3.50</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid rgba(255, 215, 0, 0.1);">
+                <span>Loaded Fries</span>
+                <span style="color: #22c55e; font-weight: 600;">$6.50</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; border-bottom: 1px solid rgba(255, 215, 0, 0.1);">
+                <span>Mozzarella Sticks (6pc)</span>
+                <span style="color: #22c55e; font-weight: 600;">$5.50</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 0;">
+                <span>Fresh Lemonades</span>
+                <span style="color: #22c55e; font-weight: 600;">$2.50</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Menu Item Modal -->
+<div id="editModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 2000; align-items: center; justify-content: center;">
+    <div style="background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%); padding: 2rem; border-radius: 12px; max-width: 500px; width: 90%; border: 2px solid rgba(255, 215, 0, 0.3);">
+        <h3 style="color: #FFD700; margin-bottom: 1.5rem; text-align: center;">Edit Menu Item</h3>
+        <form id="editItemForm">
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #FFD700; font-weight: 500;">Item Name:</label>
+                <div id="modalItemName" style="padding: 0.75rem; background: #333; border-radius: 8px; color: #fff;"></div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; color: #FFD700; font-weight: 500;">Selling Price:</label>
+                    <input type="number" id="newPrice" min="0" step="0.01" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid rgba(255, 215, 0, 0.3); background: #2a2a2a; color: #ffffff;">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 0.5rem; color: #FFD700; font-weight: 500;">Cost to Make:</label>
+                    <input type="number" id="newCost" min="0" step="0.01" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid rgba(255, 215, 0, 0.3); background: #2a2a2a; color: #ffffff;">
+                </div>
+            </div>
+            <div style="background: rgba(255, 215, 0, 0.1); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span>Profit per Item:</span>
+                    <span id="calculatedProfit" style="color: #22c55e; font-weight: 600;">$0.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Profit Margin:</span>
+                    <span id="calculatedMargin" style="color: #22c55e; font-weight: 600;">0%</span>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()" style="flex: 1;">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let currentEditKey = '';
+    let currentEditName = '';
+
+    function editItem(itemKey, itemName, price, cost) {
+        currentEditKey = itemKey;
+        currentEditName = itemName;
+        document.getElementById('modalItemName').textContent = itemName;
+        document.getElementById('newPrice').value = price.toFixed(2);
+        document.getElementById('newCost').value = cost.toFixed(2);
+        updateCalculations();
+        document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+        document.getElementById('editItemForm').reset();
+    }
+
+    function updateCalculations() {
+        const price = parseFloat(document.getElementById('newPrice').value) || 0;
+        const cost = parseFloat(document.getElementById('newCost').value) || 0;
+        const profit = price - cost;
+        const margin = price > 0 ? (profit / price * 100) : 0;
+        
+        document.getElementById('calculatedProfit').textContent = '$' + profit.toFixed(2);
+        document.getElementById('calculatedMargin').textContent = margin.toFixed(1) + '%';
+        
+        // Update color based on margin
+        const marginElement = document.getElementById('calculatedMargin');
+        if (margin >= 60) {
+            marginElement.style.color = '#22c55e';
+        } else if (margin >= 40) {
+            marginElement.style.color = '#FFA500';
+        } else {
+            marginElement.style.color = '#DC143C';
+        }
+    }
+
+    // Add event listeners for real-time calculation updates
+    document.getElementById('newPrice').addEventListener('input', updateCalculations);
+    document.getElementById('newCost').addEventListener('input', updateCalculations);
+
+    document.getElementById('editItemForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const newPrice = parseFloat(document.getElementById('newPrice').value);
+        const newCost = parseFloat(document.getElementById('newCost').value);
+        
+        if (isNaN(newPrice) || isNaN(newCost) || newPrice < 0 || newCost < 0) {
+            alert('Please enter valid price and cost values');
+            return;
+        }
+        
+        // Here you would typically send the update to the server
+        alert('Menu item updated successfully!\n\nNote: This is a demo - in the full version, this would save to your database.');
+        closeEditModal();
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('editModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeEditModal();
+        }
+    });
+
+    // Close modal with escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeEditModal();
+        }
+    });
+</script>
+{% endblock %}

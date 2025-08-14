@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SmashCity{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Business Dashboard</h1>
+    <p class="page-subtitle">Real-time insights into your SmashCity operations</p>
+</div>
+
+<!-- Key Metrics Row -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-dollar-sign card-icon"></i>
+            <h3 class="card-title">Today's Revenue</h3>
+        </div>
+        <div style="font-size: 2.5rem; font-weight: bold; color: #22c55e;">
+            ${{ "%.2f"|format(today_revenue) }}
+        </div>
+        <p style="color: #cccccc; margin-top: 0.5rem;">Total sales today</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-chart-line card-icon"></i>
+            <h3 class="card-title">Today's Profit</h3>
+        </div>
+        <div style="font-size: 2.5rem; font-weight: bold; color: {% if today_profit >= 0 %}#22c55e{% else %}#DC143C{% endif %};">
+            ${{ "%.2f"|format(today_profit) }}
+        </div>
+        <p style="color: #cccccc; margin-top: 0.5rem;">Net profit margin</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-boxes card-icon"></i>
+            <h3 class="card-title">Inventory Value</h3>
+        </div>
+        <div style="font-size: 2.5rem; font-weight: bold; color: #FFD700;">
+            ${{ "%.2f"|format(inventory_value) }}
+        </div>
+        <p style="color: #cccccc; margin-top: 0.5rem;">Total stock on hand</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-exclamation-triangle card-icon"></i>
+            <h3 class="card-title">Low Stock Alerts</h3>
+        </div>
+        <div style="font-size: 2.5rem; font-weight: bold; color: {% if low_stock_count > 0 %}#DC143C{% else %}#22c55e{% endif %};">
+            {{ low_stock_count }}
+        </div>
+        <p style="color: #cccccc; margin-top: 0.5rem;">Items need restocking</p>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-bolt card-icon"></i>
+        <h3 class="card-title">Quick Actions</h3>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+        <a href="/sales" class="btn btn-primary">
+            <i class="fas fa-cash-register"></i> Record Sale
+        </a>
+        <a href="/inventory" class="btn btn-secondary">
+            <i class="fas fa-boxes"></i> Update Inventory
+        </a>
+        <a href="/menu" class="btn btn-primary">
+            <i class="fas fa-utensils"></i> View Menu
+        </a>
+        <button class="btn btn-secondary" onclick="generateReport()">
+            <i class="fas fa-file-alt"></i> Daily Report
+        </button>
+    </div>
+</div>
+
+<!-- Quick Sale Entry -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-shopping-cart card-icon"></i>
+        <h3 class="card-title">Quick Sale Entry</h3>
+    </div>
+    <form id="quickSaleForm" style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; align-items: end;">
+        <div>
+            <label style="display: block; margin-bottom: 0.5rem; color: #FFD700; font-weight: 500;">Item</label>
+            <select id="saleItem" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid rgba(255, 215, 0, 0.3); background: #2a2a2a; color: #ffffff;">
+                <option value="">Select item...</option>
+                <option value="single_smash">Single Smash Burger - $5.00</option>
+                <option value="double_smash">Double Smash Burger - $8.00</option>
+                <option value="triple_smash">Triple Smash Burger - $11.00</option>
+                <option value="swiss_mushroom">Swiss & Mushroom Burger - $9.50</option>
+                <option value="pizza_burger">Pizza Burger - $9.00</option>
+                <option value="chopped_cheese">Chopped Cheese Hero - $7.50</option>
+                <option value="philly_cheesesteak">Philly Cheesesteak Hero - $8.50</option>
+                <option value="regular_fries">Regular Fries - $3.50</option>
+                <option value="loaded_fries">Loaded Fries - $6.50</option>
+                <option value="mozz_sticks">Mozzarella Sticks (6pc) - $5.50</option>
+            </select>
+        </div>
+        <div>
+            <label style="display: block; margin-bottom: 0.5rem; color: #FFD700; font-weight: 500;">Quantity</label>
+            <input type="number" id="saleQuantity" min="1" value="1" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid rgba(255, 215, 0, 0.3); background: #2a2a2a; color: #ffffff;">
+        </div>
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Sale
+        </button>
+    </form>
+</div>
+
+<script>
+    // Quick sale form handling
+    document.getElementById('quickSaleForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const item = document.getElementById('saleItem').value;
+        const quantity = document.getElementById('saleQuantity').value;
+        
+        if (!item || !quantity) {
+            alert('Please select an item and quantity');
+            return;
+        }
+        
+        fetch('/record_sale', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                item: item,
+                quantity: parseInt(quantity)
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Sale recorded successfully!');
+                location.reload();
+            } else {
+                alert('Error recording sale: ' + data.error);
+            }
+        });
+    });
+
+    function generateReport() {
+        alert('Daily report feature coming soon!');
+    }
+</script>
+{% endblock %}

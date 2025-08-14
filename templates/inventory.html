@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory - SmashCity{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Inventory Management</h1>
+    <p class="page-subtitle">Track your ingredients and supplies in real-time</p>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-boxes card-icon"></i>
+        <h3 class="card-title">Current Inventory</h3>
+    </div>
+    
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Current Stock</th>
+                    <th>Unit Cost</th>
+                    <th>Total Value</th>
+                    <th>Min Stock</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for key, item in inventory.items() %}
+                <tr>
+                    <td style="font-weight: 600;">{{ item.name }}</td>
+                    <td>
+                        {% if item.cost_per_oz is defined %}
+                            {{ item.stock_oz }} oz
+                        {% elif item.cost_per_slice is defined %}
+                            {{ item.stock_slices }} slices
+                        {% elif item.cost_per_unit is defined %}
+                            {{ item.stock_units }} units
+                        {% elif item.cost_per_serving is defined %}
+                            {{ item.stock_servings }} servings
+                        {% elif item.cost_per_piece is defined %}
+                            {{ item.stock_pieces }} pieces
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.cost_per_oz is defined %}
+                            ${{ "%.2f"|format(item.cost_per_oz) }}/oz
+                        {% elif item.cost_per_slice is defined %}
+                            ${{ "%.2f"|format(item.cost_per_slice) }}/slice
+                        {% elif item.cost_per_unit is defined %}
+                            ${{ "%.2f"|format(item.cost_per_unit) }}/unit
+                        {% elif item.cost_per_serving is defined %}
+                            ${{ "%.2f"|format(item.cost_per_serving) }}/serving
+                        {% elif item.cost_per_piece is defined %}
+                            ${{ "%.2f"|format(item.cost_per_piece) }}/piece
+                        {% endif %}
+                    </td>
+                    <td style="color: #22c55e; font-weight: 600;">
+                        {% if item.cost_per_oz is defined %}
+                            ${{ "%.2f"|format(item.stock_oz * item.cost_per_oz) }}
+                        {% elif item.cost_per_slice is defined %}
+                            ${{ "%.2f"|format(item.stock_slices * item.cost_per_slice) }}
+                        {% elif item.cost_per_unit is defined %}
+                            ${{ "%.2f"|format(item.stock_units * item.cost_per_unit) }}
+                        {% elif item.cost_per_serving is defined %}
+                            ${{ "%.2f"|format(item.stock_servings * item.cost_per_serving) }}
+                        {% elif item.cost_per_piece is defined %}
+                            ${{ "%.2f"|format(item.stock_pieces * item.cost_per_piece) }}
+                        {% endif %}
+                    </td>
+                    <td>{{ item.min_stock }}</td>
+                    <td>
+                        {% set current_stock = item.stock_oz if item.cost_per_oz is defined else 
+                                             item.stock_slices if item.cost_per_slice is defined else
+                                             item.stock_units if item.cost_per_unit is defined else
+                                             item.stock_servings if item.cost_per_serving is defined else
+                                             item.stock_pieces %}
+                        {% if current_stock <= item.min_stock %}
+                            <span style="color: #DC143C; font-weight: 600;">
+                                <i class="fas fa-exclamation-triangle"></i> Low Stock
+                            </span>
+                        {% elif current_stock <= item.min_stock * 1.5 %}
+                            <span style="color: #FFA500; font-weight: 600;">
+                                <i class="fas fa-exclamation-circle"></i> Warning
+                            </span>
+                        {% else %}
+                            <span style="color: #22c55e; font-weight: 600;">
+                                <i class="fas fa-check-circle"></i> Good
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-primary" onclick="updateStock('{{ key }}', '{{ item.name }}')">
+                            <i class="fas fa-edit"></i> Update
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Quick Restock -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-truck card-icon"></i>
+        <h3 class="card-title">Quick Restock</h3>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+        <button class="btn btn-secondary" onclick="restockAll()">
+            <i class="fas fa-boxes"></i> Restock Low Items
+        </button>
+        <button class="btn btn-primary" onclick="addNewItem()">
+            <i class="fas fa-plus"></i> Add New Item
+        </button>
+        <button class="btn btn-secondary" onclick="exportInventory()">
+            <i class="fas fa-download"></i> Export Report
+        </button>
+        <button class="btn btn-primary" onclick="inventoryAlerts()">
+            <i class="fas fa-bell"></i> Set Alerts
+        </button>
+    </div>
+</div>
+
+<!-- Update Stock Modal -->
+<div id="updateModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 2000; align-items: center; justify-content: center;">
+    <div style="background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%); padding: 2rem; border-radius: 12px; max-width: 400px; width: 90%; border: 2px solid rgba(255, 215, 0, 0.3);">
+        <h3 style="color: #FFD700; margin-bottom: 1.5rem; text-align: center;">Update Stock</h3>
+        <form id="updateStockForm">
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #FFD700; font-weight: 500;">Item:</label>
+                <div id="modalItemName" style="padding: 0.75rem; background: #333; border-radius: 8px; color: #fff;"></div>
+            </div>
+            <div style="margin-bottom: 1.5rem;">
+                <label style="display: block; margin-bottom: 0.5rem; color: #FFD700; font-weight: 500;">New Stock Amount:</label>
+                <input type="number" id="newStockAmount" min="0" step="0.1" style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid rgba(255, 215, 0, 0.3); background: #2a2a2a; color: #ffffff;">
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">
+                    <i class="fas fa-save"></i> Update
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()" style="flex: 1;">
+                    <i class="fas fa-times"></i> Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let currentItemKey = '';
+    let currentItemName = '';
+
+    function updateStock(itemKey, itemName) {
+        currentItemKey = itemKey;
+        currentItemName = itemName;
+        document.getElementById('modalItemName').textContent = itemName;
+        document.getElementById('updateModal').style.display = 'flex';
+        document.getElementById('newStockAmount').focus();
+    }
+
+    function closeModal() {
+        document.getElementById('updateModal').style.display = 'none';
+        document.getElementById('updateStockForm').reset();
+    }
+
+    document.getElementById('updateStockForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const newStock = parseFloat(document.getElementById('newStockAmount').value);
+        
+        if (isNaN(newStock) || newStock < 0) {
+            alert('Please enter a valid stock amount');
+            return;
+        }
+        
+        fetch('/update_inventory', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                item: currentItemKey,
+                stock: newStock
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Stock updated successfully!');
+                location.reload();
+            } else {
+                alert('Error updating stock: ' + data.error);
+            }
+        });
+        
+        closeModal();
+    });
+
+    function restockAll() {
+        alert('Bulk restock feature coming soon!');
+    }
+
+    function addNewItem() {
+        alert('Add new item feature coming soon!');
+    }
+
+    function exportInventory() {
+        alert('Export feature coming soon!');
+    }
+
+    function inventoryAlerts() {
+        alert('Alert settings coming soon!');
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('updateModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+
+    // Close modal with escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+</script>
+{% endblock %}
